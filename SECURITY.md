@@ -182,7 +182,7 @@ VerifyTrust provides its software and services **“as is”**, without warranty
 
 For security-related concerns only:
 
-**Email:** [security@verifytrust.online](mailto:security@verifytrust.online)
+**Email:** [security@verifytrust.online](mailto:verifytrust.online@gmail.com)
 **Website:** [https://www.verifytrust.online](https://www.verifytrust.online)
 
 ---

@@ -107,7 +107,7 @@ This License shall be governed by and construed in accordance with the laws of t
 
 For licensing inquiries, commercial use, or permissions:
 
-**Email:** [legal@verifytrust.online](mailto:legal@verifytrust.online)
+**Email:** [legal@verifytrust.online](mailto:verifytrust.online@gmail.com)
 **Website:** [https://www.verifytrust.online](https://www.verifytrust.online)
 
 ---
