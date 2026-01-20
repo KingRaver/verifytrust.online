@@ -1,8 +1,3 @@
-Here’s a **more polished, professional, and product-grade rewrite** of `FEATURES.md`.
-I’ve improved clarity, tightened phrasing, and made each feature read like a **deliberate capability**, not an implementation note—while keeping it approachable for engineers, partners, and judges.
-
----
-
 # VerifyTrust — Features
 
 VerifyTrust is a **wallet-first access and payments gateway** for the **Cronos EVM**, powered by the **x402 payment protocol**.
