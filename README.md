@@ -1,71 +1,101 @@
 # VerifyTrust
 
-VerifyTrust is a wallet‑first access and payments gateway built for the Cronos EVM and the x402 payment protocol. It lets users connect a wallet, complete a stablecoin payment on Cronos, and unlock protected resources without traditional accounts, passwords, or emails.
+**VerifyTrust** is a wallet-first access and payments gateway built for the **Cronos EVM** and the **x402 payment protocol**.
+It enables users to unlock protected resources by completing an on-chain stablecoin payment—without creating traditional accounts, passwords, or emails.
 
-## Features
+VerifyTrust is designed as a reference implementation of **buyer-side x402 flows on Cronos**, with a minimal seller backend that integrates directly with the **Cronos x402 Facilitator**.
 
-- Wallet‑based login with MetaMask or WalletConnect.
-- Cronos‑native configuration (chainId 25, `https://evm.cronos.org/` RPC).
-- Step‑by‑step flow: connect wallet → pay via x402 → access protected resource.
-- Buyer‑side x402 “exact” scheme scaffold using EIP‑3009 authorizations.
-- Simple seller API endpoints that talk to the Cronos x402 Facilitator over HTTPS.
+---
 
-***
+## Key Capabilities
 
-## Architecture
+* **Wallet-based authentication** using MetaMask or WalletConnect
+* **Cronos-native configuration**
+
+  * Chain ID: `25`
+  * RPC: `https://evm.cronos.org/`
+* **Step-by-step access flow**
+
+  1. Connect wallet
+  2. Complete x402 payment
+  3. Unlock gated resource
+* **Buyer-side x402 “exact” scheme scaffold**
+
+  * Uses EIP-3009 `TransferWithAuthorization`
+* **Minimal seller API**
+
+  * Verifies and settles payments via the Cronos x402 Facilitator over HTTPS
+
+---
+
+## System Architecture
 
 ### Frontend (Next.js)
 
-- `pages/index.tsx`  
-  Landing screen; prompts user to connect a wallet via MetaMask or WalletConnect. On successful connection it redirects to `/pay?address=<walletAddress>`.
+| File                 | Description                                                                                                                          |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| `pages/index.tsx`    | Landing page. Prompts the user to connect a wallet via MetaMask or WalletConnect and redirects to `/pay` after connection.           |
+| `pages/pay.tsx`      | Payment page. Fetches payment requirements, builds an x402 payment header using the connected wallet, and submits it for settlement. |
+| `styles/globals.css` | Global styles for the VerifyTrust card UI and animated background.                                                                   |
 
-- `pages/pay.tsx`  
-  Payment step. Fetches `paymentRequirements` from the backend, builds an x402 payment header using the connected wallet, and posts it to `/api/settle-payment`.
+---
 
-- `styles/globals.css`  
-  Global styling for the VerifyTrust card UI and animated background.
+### Backend (Next.js API Routes)
 
-### Backend (Next.js API routes)
+| Endpoint                    | Description                                                                                                                        |
+| --------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| `/api/payment-requirements` | Returns a JSON object describing the required payment (amount, asset, destination). Acts as the seller “price sheet.”              |
+| `/api/settle-payment`       | Accepts an `X-PAYMENT` header, forwards it to the Cronos x402 Facilitator for verification and settlement, and returns the result. |
 
-- `pages/api/payment-requirements.ts`  
-  Returns a JSON `paymentRequirements` object describing how much to pay, which stablecoin to use, and which Cronos address receives funds. This is the seller’s “price sheet”.
+---
 
-- `pages/api/settle-payment.ts`  
-  Accepts an `X-PAYMENT` header from the client, forwards it to the Cronos x402 Facilitator `/verify` and `/settle` endpoints, and returns a success response if payment is settled.
+### Shared Library
 
-### Shared library
+**`lib/x402Cronos.ts`** provides helpers to:
 
-- `lib/x402Cronos.ts`  
-  Helper functions to:
-  - Describe Cronos “exact” payment requirements.
-  - Construct the x402 envelope and sign an EIP‑3009 `TransferWithAuthorization` using the user’s wallet.
-  - Call the Cronos x402 Facilitator to verify and settle the payment.
+* Define Cronos-specific “exact” x402 payment requirements
+* Construct an x402 envelope
+* Sign an EIP-3009 `TransferWithAuthorization` using the user’s wallet
+* Verify and settle payments via the Cronos x402 Facilitator
 
-***
+---
 
-## Cronos & x402 Background
+## Cronos & x402 Overview
 
-Cronos is an EVM‑compatible chain (chainId `25`) with a JSON‑RPC endpoint at `https://evm.cronos.org/`, making it straightforward to integrate via ethers.js and MetaMask.  The native token is CRO, while stablecoins such as USDX or USDC are used for dollar‑denominated payments.
+**Cronos** is an EVM-compatible blockchain (chain ID `25`) with a public JSON-RPC endpoint at `https://evm.cronos.org/`.
+It supports CRO for gas fees and multiple stablecoins (e.g., USDC, USDX) for dollar-denominated payments.
 
-x402 is an HTTP‑native payment protocol based on status code 402. A typical flow is:
+**x402** is an HTTP-native payment protocol built around the `402 Payment Required` status code.
 
-1. Buyer requests a resource (e.g. `/api/premium-data`).
-2. Seller responds with `402 Payment Required` and a `paymentRequirements` object describing amount, token, network, and destination address.
-3. Buyer constructs and signs an authorization (e.g. EIP‑3009 on an EVM chain) and encodes it as an `X-PAYMENT` header.
-4. Buyer retries the request with `X-PAYMENT`.
-5. Seller verifies and settles via a facilitator (Cronos x402 Facilitator), then returns the requested content.
+### Typical x402 Flow
 
-VerifyTrust implements the buyer UI and a minimal seller interface tailored for the Cronos x402 Facilitator so it qualifies for the Cronos x402 PayTech Hackathon.
+1. Buyer requests a protected resource.
+2. Seller responds with `402 Payment Required` and a `paymentRequirements` object.
+3. Buyer constructs and signs a payment authorization (e.g., EIP-3009).
+4. Buyer retries the request with an `X-PAYMENT` header.
+5. Seller verifies and settles the payment, then returns the requested content.
 
-***
+VerifyTrust implements:
+
+* A **buyer UI** that handles wallet connection and x402 payment signing
+* A **minimal seller interface** tailored for the Cronos x402 Facilitator
+
+This makes it suitable as a **PayTech Hackathon submission** and as a reusable reference architecture.
+
+---
 
 ## Getting Started
 
 ### Prerequisites
 
-- Node.js and npm installed.
-- A Cronos mainnet wallet with some CRO for gas and a supported stablecoin (e.g. USDX/USDC).
-- A seller address on Cronos where payments will be received.
+* Node.js and npm
+* A Cronos mainnet wallet with:
+
+  * CRO for gas
+  * A supported stablecoin (e.g., USDC or USDX)
+* A seller wallet address on Cronos to receive payments
+
+---
 
 ### Installation
 
@@ -75,9 +105,11 @@ cd verifytrust
 npm install
 ```
 
-### Environment configuration
+---
 
-Create `.env.local` in the project root:
+### Environment Configuration
+
+Create a `.env.local` file in the project root:
 
 ```env
 # Cronos mainnet RPC
@@ -86,56 +118,65 @@ CRONOS_RPC_URL=https://evm.cronos.org/
 # Cronos x402 facilitator base URL
 CRONOS_X402_FACILITATOR=https://facilitator.cronoslabs.org/v2/x402
 
-# Your seller wallet on Cronos (where funds go)
+# Seller wallet on Cronos
 CRONOS_SELLER_ADDRESS=0xYourCronosSellerAddressHere
 
-# Stable token contract on Cronos (e.g. USDX or USDC)
+# Stablecoin contract address on Cronos (USDC / USDX)
 CRONOS_USD_TOKEN=0xYourCronosStableTokenAddressHere
 ```
 
-These values align with Cronos’ recommended public RPC and facilitator endpoint.
+These values align with Cronos’ recommended public RPC and facilitator endpoints.
 
-The `next.config.js` file exposes these values to the app at build time.
+> **Note:** `next.config.js` exposes these values to the application at build time.
 
-### Running the app locally
+---
+
+### Running Locally
 
 ```bash
 npm run dev
-# open http://localhost:3000
+# Open http://localhost:3000
 ```
 
-Flow:
+#### End-to-End Flow
 
-1. Open `/` and connect your wallet on Cronos.
+1. Open `/` and connect a wallet configured for Cronos.
 2. You are redirected to `/pay`.
-3. `/pay` fetches `paymentRequirements` from `/api/payment-requirements`.
-4. Click “Pay with Cronos” to sign and submit an x402 payment header.
-5. On success, `/api/settle-payment` responds with payment details (including `txHash` from the facilitator), and the UI can then unlock gated content.
+3. `/pay` fetches payment requirements from `/api/payment-requirements`.
+4. Click **“Pay with Cronos”** to sign and submit an x402 payment.
+5. On success, `/api/settle-payment` returns settlement details (including `txHash`).
+6. The UI unlocks gated content.
 
-***
+---
 
 ## Code Walkthrough
 
-### Wallet connect (`pages/index.tsx`)
+### Wallet Connection (`pages/index.tsx`)
 
-- Uses `ethers` `BrowserProvider` to get a signer from MetaMask or WalletConnect.
-- Displays a short address summary after connection.
-- Navigates to `/pay?address=<walletAddress>` to avoid re‑prompting for wallet details.
+* Uses `ethers` `BrowserProvider` to access MetaMask or WalletConnect.
+* Displays a shortened wallet address after connection.
+* Redirects to `/pay?address=<walletAddress>` to avoid re-prompting.
 
-### Payment UI (`pages/pay.tsx`)
+---
 
-- On mount, calls `/api/payment-requirements` to discover what needs to be paid.
-- When the user clicks “Pay with Cronos”:
-  - Gets the signer from the injected provider.
-  - Calls `buildExactPaymentHeader({ signer, from, requirements })`, which:
-    - Derives a token amount from the human value.
-    - Constructs EIP‑712 typed data for `TransferWithAuthorization` on Cronos.
-    - Signs it and returns a base64‑encoded x402 envelope suitable for `X-PAYMENT`.
-  - Sends `X-PAYMENT` to `/api/settle-payment`.
+### Payment Flow (`pages/pay.tsx`)
 
-### Seller configuration (`pages/api/payment-requirements.ts`)
+* Fetches `paymentRequirements` on mount.
+* On **“Pay with Cronos”**:
 
-- Returns an object like:
+  * Retrieves the wallet signer.
+  * Calls `buildExactPaymentHeader({ signer, from, requirements })`, which:
+
+    * Converts human-readable amounts to token units.
+    * Constructs EIP-712 typed data for `TransferWithAuthorization`.
+    * Signs and encodes the authorization as a base64 x402 envelope.
+  * Sends the envelope as an `X-PAYMENT` header to `/api/settle-payment`.
+
+---
+
+### Seller Configuration (`/api/payment-requirements`)
+
+Returns a response such as:
 
 ```ts
 {
@@ -149,40 +190,50 @@ Flow:
 }
 ```
 
-This matches the “exact” payment scheme and includes the `network` field used by the Cronos facilitator to distinguish mainnet from testnet.
+This matches the Cronos “exact” payment scheme and includes the `network` field required by the facilitator.
 
-### Settlement handler (`pages/api/settle-payment.ts`)
+---
 
-- Expects an `X-PAYMENT` header carrying a base64‑encoded x402 envelope.
-- Calls `settleWithCronosFacilitator(x402Header)` from `lib/x402Cronos.ts`, which:
-  - POSTs to `https://facilitator.cronoslabs.org/v2/x402/verify` with the payment header and requirements.
-  - If valid, POSTs to `.../settle`.
-  - Returns `ok`, `txHash`, and raw facilitator responses on success.
+### Payment Settlement (`/api/settle-payment`)
 
-***
+* Expects an `X-PAYMENT` header containing a base64-encoded x402 envelope.
+* Calls the Cronos x402 Facilitator:
+
+  1. `/verify` to validate the payment
+  2. `/settle` to execute settlement
+* Returns:
+
+  * `ok` status
+  * `txHash`
+  * Raw facilitator responses
+
+---
 
 ## Development Notes & TODOs
 
-- **Token details:**  
-  The EIP‑3009 representation and `value` calculation in `lib/x402Cronos.ts` are scaffolding. They must be updated to match the actual stablecoin contract on Cronos, including name, version, and decimals.
+### Token Integration
 
-- **Security considerations:**  
-  - Validate `network`, `payTo`, and `asset` on the server before forwarding to the facilitator.
-  - Sanity‑check payment amounts to avoid over‑payments or phishing headers.
+* The EIP-3009 typed-data configuration in `lib/x402Cronos.ts` is scaffolding.
+* Update:
 
-- **Production deployment:**  
-  - Host the Next.js app on a platform like Vercel, using the same `.env` keys.
-  - Optionally move seller logic to a dedicated backend (FastAPI, Node, etc.) while keeping the same x402 interface.
+  * Token name
+  * Version
+  * Decimals
+  * Domain separator
+    to match the deployed stablecoin contract.
 
-***
+---
 
-## Resources
+### Security Considerations
 
-- Cronos docs: `https://docs.cronos.org`
-- Cronos x402 Facilitator docs: `https://docs.cronos.org/cronos-x402-facilitator`
-- x402 protocol overview: `https://www.x402.org`
-- Quickstart for x402 buyers: `https://docs.cronos.org/cronos-x402-facilitator/quick-start-for-buyers`
-- Quickstart for x402 sellers (pattern shared across chains): `https://docs.cdp.coinbase.com/x402/docs/welcome`
+* Validate `network`, `payTo`, and `asset` server-side before settlement.
+* Enforce strict amount checks to prevent over-payment or malicious headers.
+* Consider replay-protection and nonce handling for production use.
 
-This README should give collaborators, hackathon judges, and future you enough context to understand how VerifyTrust works end‑to‑end and how it integrates Cronos and x402.
+---
 
+### Production Deployment
+
+* Deploy the Next.js app to Vercel or a similar platform.
+* Use the same environment variables in production.
+* Optionally extract seller logic into a standalone backend (Node, FastAPI, etc.) while preserving the x402 interface.
